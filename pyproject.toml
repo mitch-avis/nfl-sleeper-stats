@@ -22,11 +22,12 @@ classifiers = [
 Homepage = "https://github.com/mitch-avis/nfl-sleeper-stats"
 
 [project.scripts]
-nfl-sleeper-stats = "nfl_sleeper_stats.main:main"
+nfl-sleeper-stats = "nfl_sleeper_stats.get_stats:main"
 
 [dependency-groups]
 dev = [
     "colorama",
+    "coloredlogs",
     "pyright",
     "pytest",
     "pytest-cov",
@@ -135,7 +136,6 @@ pythonpath = ["."]
 [tool.coverage.run]
 branch = true
 source = ["nfl_sleeper_stats"]
-omit = ["config.py", "config-*.py", "*/config.py", "*/config-*.py"]
 
 [tool.coverage.report]
 show_missing = true

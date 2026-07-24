@@ -1,28 +1,365 @@
-"""
-constants.py
-This module contains the constants used in the nfl_stats project.
-Constants:
-- QB_STATS: A list of quarterback statistics.
-- RB_STATS: A list of running back statistics.
-- WR_STATS: A list of wide receiver statistics.
-- TE_STATS: A list of tight end statistics.
-- DEF_STATS: A list of defense statistics.
+"""Define shared constants and path helpers for nfl_sleeper_stats.
+
+This module centralizes published stat names and resolves the output directory used for cached CSV
+artifacts.
 """
 
 import os
 from pathlib import Path
 
-# Project directory configurations
-ROOT_DIR = Path(__file__).parent.parent
-DATA_PATH = os.path.join(ROOT_DIR, "data")
+PACKAGE_NAME = "nfl_sleeper_stats"
+DATA_DIR_ENV_VAR = "NFL_SLEEPER_STATS_DATA_DIR"
 
-POSITION_STATS = {
+
+def _is_project_root(path: Path) -> bool:
+    """Return whether a path looks like the project root."""
+    return (path / "pyproject.toml").is_file() and (path / PACKAGE_NAME).is_dir()
+
+
+def resolve_project_root(cwd: Path | None = None, module_file: Path | None = None) -> Path:
+    """Resolve the project root for local repository runs.
+
+    Prefer a working directory inside the repository so direct script execution and editable-install
+    entrypoints both write cache files to the local checkout.
+
+    Args:
+        cwd: Working directory to inspect. Defaults to the current working directory.
+        module_file: Module file to inspect for source-tree parents. Defaults to this module.
+
+    Returns:
+        Path: Resolved project root when a local checkout can be identified.
+
+    """
+    current_dir = (cwd or Path.cwd()).resolve()
+    for candidate in (current_dir, *current_dir.parents):
+        if _is_project_root(candidate):
+            return candidate
+
+    current_module = Path(module_file or __file__).resolve()
+    for candidate in current_module.parents:
+        if _is_project_root(candidate):
+            return candidate
+
+    return current_dir
+
+
+def resolve_data_path(cwd: Path | None = None, module_file: Path | None = None) -> Path:
+    """Resolve the directory used to store generated CSV files.
+
+    Args:
+        cwd: Working directory to inspect. Defaults to the current working directory.
+        module_file: Module file to inspect for source-tree parents. Defaults to this module.
+
+    Returns:
+        Path: Directory where generated CSV files should be written.
+
+    """
+    configured_path = os.getenv(DATA_DIR_ENV_VAR)
+    if configured_path:
+        return Path(configured_path).expanduser().resolve()
+
+    return resolve_project_root(cwd=cwd, module_file=module_file) / "data"
+
+
+ROOT_DIR = resolve_project_root()
+DATA_PATH = resolve_data_path()
+
+# Sleeper stat-field catalog.
+# Includes the saved 2025 payload fields plus relevant historical extras.
+ALL_STATS = [
+    "anytime_tds",
+    "blk_kick",
+    "blk_kick_ret_td",
+    "blk_kick_ret_yd",
+    "blk_pr_td",
+    "bonus_def_fum_td_50p",
+    "bonus_def_int_td_50p",
+    "bonus_fd_qb",
+    "bonus_fd_rb",
+    "bonus_fd_te",
+    "bonus_fd_wr",
+    "bonus_pass_cmp_25",
+    "bonus_pass_yd_300",
+    "bonus_pass_yd_400",
+    "bonus_rec_rb",
+    "bonus_rec_te",
+    "bonus_rec_wr",
+    "bonus_rec_yd_100",
+    "bonus_rec_yd_200",
+    "bonus_rush_att_20",
+    "bonus_rush_rec_yd_100",
+    "bonus_rush_rec_yd_200",
+    "bonus_rush_yd_100",
+    "bonus_rush_yd_200",
+    "bonus_sack_2p",
+    "bonus_tkl_10p",
+    "cmp_pct",
+    "def_2pt",
+    "def_3_and_out",
+    "def_4_and_stop",
+    "def_forced_punts",
+    "def_kr",
+    "def_kr_lng",
+    "def_kr_td",
+    "def_kr_yd",
+    "def_kr_ypa",
+    "def_pass_def",
+    "def_pr",
+    "def_pr_lng",
+    "def_pr_td",
+    "def_pr_yd",
+    "def_pr_ypa",
+    "def_snp",
+    "def_st_ff",
+    "def_st_fum_rec",
+    "def_st_td",
+    "def_st_tkl_solo",
+    "def_td",
+    "down_3_att",
+    "down_3_conv",
+    "down_3_pct",
+    "down_4_att",
+    "down_4_conv",
+    "down_4_pct",
+    "fan_pts_allow",
+    "fan_pts_allow_def",
+    "fan_pts_allow_k",
+    "fan_pts_allow_qb",
+    "fan_pts_allow_rb",
+    "fan_pts_allow_te",
+    "fan_pts_allow_wr",
+    "fd",
+    "ff",
+    "ff_misc",
+    "fg_blkd",
+    "fg_ret_yd",
+    "fga",
+    "fgm",
+    "fgm_0_19",
+    "fgm_20_29",
+    "fgm_30_39",
+    "fgm_40_49",
+    "fgm_50_59",
+    "fgm_50p",
+    "fgm_60p",
+    "fgm_lng",
+    "fgm_pct",
+    "fgm_yds",
+    "fgm_yds_over_30",
+    "fgmiss",
+    "fgmiss_20_29",
+    "fgmiss_30_39",
+    "fgmiss_40_49",
+    "fgmiss_50_59",
+    "fgmiss_50p",
+    "fgmiss_60p",
+    "first_td",
+    "fum",
+    "fum_lost",
+    "fum_rec",
+    "fum_rec_ez_tds",
+    "fum_rec_td",
+    "fum_ret_yd",
+    "g2g_att",
+    "g2g_conv",
+    "g2g_pct",
+    "gms_active",
+    "gp",
+    "gs",
+    "idp_blk_kick",
+    "idp_def_td",
+    "idp_ff",
+    "idp_fum_rec",
+    "idp_fum_ret_yd",
+    "idp_int",
+    "idp_int_ret_yd",
+    "idp_pass_def",
+    "idp_pass_def_3p",
+    "idp_qb_hit",
+    "idp_sack",
+    "idp_sack_yd",
+    "idp_safe",
+    "idp_tkl",
+    "idp_tkl_ast",
+    "idp_tkl_loss",
+    "idp_tkl_solo",
+    "int",
+    "int_ret_yd",
+    "kick_pts",
+    "kr",
+    "kr_lng",
+    "kr_td",
+    "kr_yd",
+    "kr_ypa",
+    "misc_ret_yd",
+    "misc_td",
+    "name",
+    "off_snp",
+    "off_yd",
+    "off_yd_per_play",
+    "opp_fd",
+    "opp_off_yd",
+    "opp_off_yd_per_play",
+    "opp_pass_fd",
+    "opp_rush_fd",
+    "pa",
+    "pass_2pt",
+    "pass_air_yd",
+    "pass_att",
+    "pass_cmp",
+    "pass_cmp_40p",
+    "pass_fd",
+    "pass_inc",
+    "pass_int",
+    "pass_int_td",
+    "pass_lng",
+    "pass_rtg",
+    "pass_rush_yd",
+    "pass_rz_att",
+    "pass_sack",
+    "pass_sack_yds",
+    "pass_td",
+    "pass_td_40p",
+    "pass_td_50p",
+    "pass_td_lng",
+    "pass_yd",
+    "pass_ypa",
+    "pass_ypc",
+    "penalty",
+    "penalty_yd",
+    "player_id",
+    "pos_rank_half_ppr",
+    "pos_rank_ppr",
+    "pos_rank_std",
+    "position",
+    "pr",
+    "pr_lng",
+    "pr_td",
+    "pr_yd",
+    "pr_ypa",
+    "pts_allow",
+    "pts_allow_0",
+    "pts_allow_1_6",
+    "pts_allow_14_20",
+    "pts_allow_21_27",
+    "pts_allow_28_34",
+    "pts_allow_35p",
+    "pts_allow_7_13",
+    "pts_half_ppr",
+    "pts_idp",
+    "pts_ppr",
+    "pts_std",
+    "punt_blkd",
+    "punt_in_20",
+    "punt_net_yd",
+    "punt_tb",
+    "punt_yds",
+    "punts",
+    "qb_hit",
+    "rank_half_ppr",
+    "rank_ppr",
+    "rank_std",
+    "rec",
+    "rec_0_4",
+    "rec_10_19",
+    "rec_20_29",
+    "rec_2pt",
+    "rec_30_39",
+    "rec_40p",
+    "rec_5_9",
+    "rec_air_yd",
+    "rec_drop",
+    "rec_fd",
+    "rec_lng",
+    "rec_rz_tgt",
+    "rec_td",
+    "rec_td_40p",
+    "rec_td_50p",
+    "rec_td_lng",
+    "rec_tgt",
+    "rec_yar",
+    "rec_yd",
+    "rec_ypr",
+    "rec_ypt",
+    "rush_2pt",
+    "rush_40p",
+    "rush_att",
+    "rush_btkl",
+    "rush_fd",
+    "rush_lng",
+    "rush_rec_yd",
+    "rush_rz_att",
+    "rush_td",
+    "rush_td_40p",
+    "rush_td_50p",
+    "rush_td_lng",
+    "rush_tkl_loss",
+    "rush_tkl_loss_yd",
+    "rush_yac",
+    "rush_yd",
+    "rush_ypa",
+    "rz_att",
+    "rz_conv",
+    "rz_pct",
+    "sack",
+    "sack_yd",
+    "sacks",
+    "safe",
+    "season",
+    "snp",
+    "sp_fumble_recoveries",
+    "st_ff",
+    "st_fum_rec",
+    "st_snp",
+    "st_td",
+    "st_tkl_solo",
+    "td",
+    "team",
+    "tkl",
+    "tkl_ast",
+    "tkl_ast_misc",
+    "tkl_loss",
+    "tkl_solo",
+    "tkl_solo_misc",
+    "tm_def_snp",
+    "tm_off_snp",
+    "tm_snp",
+    "tm_st_snp",
+    "xp_blkd",
+    "xpa",
+    "xpm",
+    "xpmiss",
+    "yds_allow",
+    "yds_allow_0_100",
+    "yds_allow_100_199",
+    "yds_allow_200_299",
+    "yds_allow_300_349",
+    "yds_allow_350_399",
+    "yds_allow_400_449",
+    "yds_allow_450_499",
+    "yds_allow_500_549",
+    "yds_allow_550p",
+]
+
+ADP_RANK_FIELDS = [
+    "adp_2qb",
+    "adp_dynasty",
+    "adp_dynasty_2qb",
+    "adp_dynasty_half_ppr",
+    "adp_dynasty_ppr",
+    "adp_half_ppr",
+    "adp_ppr",
+]
+
+# Curated columns used for published combined CSV outputs, including repo-added metadata fields.
+USED_STATS = {
     "ALL": [
         "player_id",
         "name",
         "position",
         "team",
         "season",
+        *ADP_RANK_FIELDS,
         "gp",
         "gs",
         "snp",
@@ -100,7 +437,7 @@ POSITION_STATS = {
         "bonus_pass_yd_400",
         "bonus_rush_rec_yd_100",
         "bonus_rush_rec_yd_200",
-        "bonus_pass_comp_25",
+        "bonus_pass_cmp_25",
         "bonus_rush_att_20",
         "bonus_fd_rb",
         "bonus_fd_wr",

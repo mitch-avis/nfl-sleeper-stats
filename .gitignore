@@ -39,4 +39,4 @@ htmlcov/
 .DS_Store
 
 # Output data
-data/
+data**/
